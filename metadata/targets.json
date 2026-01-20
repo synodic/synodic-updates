@@ -1,0 +1,17 @@
+{
+ "signatures": [
+  {
+   "keyid": "cc082adb1eb06b2f2441e5d5ee182e8d4934ccc6ba3aa1ac116afc58d69daaec",
+   "sig": ""
+  }
+ ],
+ "signed": {
+  "_type": "targets",
+  "expires": "2027-01-20T20:05:02Z",
+  "spec_version": "1.0.31",
+  "targets": {},
+  "version": 1,
+  "x-tuf-on-ci-expiry-period": 365,
+  "x-tuf-on-ci-signing-period": 60
+ }
+}

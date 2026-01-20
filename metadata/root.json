@@ -1,0 +1,67 @@
+{
+ "signatures": [
+  {
+   "keyid": "cc082adb1eb06b2f2441e5d5ee182e8d4934ccc6ba3aa1ac116afc58d69daaec",
+   "sig": ""
+  }
+ ],
+ "signed": {
+  "_type": "root",
+  "consistent_snapshot": true,
+  "expires": "2027-01-20T20:05:02Z",
+  "keys": {
+   "16baae2daac43d4214b0cfcaf6fec20d52345d09f239d352ab176825e95b4695": {
+    "keytype": "sigstore-oidc",
+    "keyval": {
+     "identity": "https://github.com/synodic/synodic-updates/.github/workflows/online-sign.yml@refs/heads/main",
+     "issuer": "https://token.actions.githubusercontent.com"
+    },
+    "scheme": "Fulcio",
+    "x-tuf-on-ci-online-uri": "sigstore:"
+   },
+   "cc082adb1eb06b2f2441e5d5ee182e8d4934ccc6ba3aa1ac116afc58d69daaec": {
+    "keytype": "sigstore-oidc",
+    "keyval": {
+     "identity": "asher.norland@gmail.com",
+     "issuer": "https://github.com/login/oauth"
+    },
+    "scheme": "Fulcio",
+    "x-tuf-on-ci-keyowner": "@behemyth"
+   }
+  },
+  "roles": {
+   "root": {
+    "keyids": [
+     "cc082adb1eb06b2f2441e5d5ee182e8d4934ccc6ba3aa1ac116afc58d69daaec"
+    ],
+    "threshold": 1
+   },
+   "snapshot": {
+    "keyids": [
+     "16baae2daac43d4214b0cfcaf6fec20d52345d09f239d352ab176825e95b4695"
+    ],
+    "threshold": 1,
+    "x-tuf-on-ci-expiry-period": 365,
+    "x-tuf-on-ci-signing-period": 60
+   },
+   "targets": {
+    "keyids": [
+     "cc082adb1eb06b2f2441e5d5ee182e8d4934ccc6ba3aa1ac116afc58d69daaec"
+    ],
+    "threshold": 1
+   },
+   "timestamp": {
+    "keyids": [
+     "16baae2daac43d4214b0cfcaf6fec20d52345d09f239d352ab176825e95b4695"
+    ],
+    "threshold": 1,
+    "x-tuf-on-ci-expiry-period": 2,
+    "x-tuf-on-ci-signing-period": 1
+   }
+  },
+  "spec_version": "1.0.31",
+  "version": 1,
+  "x-tuf-on-ci-expiry-period": 365,
+  "x-tuf-on-ci-signing-period": 60
+ }
+}
