@@ -12,6 +12,33 @@ license = { text = "MIT" }
 test = ["pytest>=9.0.2"]
 lint = ["pyrefly>=0.49.0", "ruff>=0.14.13"]
 
+[tool.ruff]
+line-length = 120
+preview = true
+
+[tool.ruff.lint]
+ignore = ["D206", "D300", "D415", "E111", "E114", "E117"]
+select = [
+    "D",   # pydocstyle
+    "F",   # Pyflakes
+    "I",   # isort
+    "PL",  # pylint
+    "UP",  # pyupgrade
+    "E",   # pycodestyle
+    "B",   # flake8-bugbear
+    "SIM", # flake8-simplify
+    "PT",  # flake8-pytest-style
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+docstring-code-format = true
+indent-style = "space"
+quote-style = "single"
+
+
 [tool.pdm.scripts]
 # TUF signing operations
 sign = "tuf-on-ci-sign"
