@@ -1,0 +1,167 @@
+# Automates adding new release artifacts to the TUF repository when
+# triggered by repository_dispatch from synodic-client.
+#
+# Triggers:
+# - new-release: Stable GitHub release from synodic-client
+# - dev-release: Development build from PR merge in synodic-client
+#
+# After root key ceremony, this workflow will sign targets automatically
+# using GitHub Actions OIDC identity.
+
+name: Add Release Targets
+
+on:
+  repository_dispatch:
+    types: [new-release, dev-release]
+  
+  # Manual trigger for recovery/testing
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version'
+        required: true
+        type: string
+      channel:
+        description: 'Release channel'
+        required: true
+        type: choice
+        options:
+          - stable
+          - development
+        default: stable
+      windows_url:
+        description: 'Windows artifact download URL'
+        required: true
+        type: string
+      linux_url:
+        description: 'Linux artifact download URL'
+        required: true
+        type: string
+      macos_url:
+        description: 'macOS artifact download URL'
+        required: true
+        type: string
+
+jobs:
+  add-targets:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      id-token: write  # Required for OIDC signing
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Install PDM
+        uses: pdm-project/setup-pdm@v4
+        with:
+          python-version: "3.14"
+          cache: true
+
+      - name: Install dependencies
+        run: pdm install
+
+      - name: Determine version and channel
+        id: config
+        run: |
+          if [ "${{ github.event_name }}" == "repository_dispatch" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+            VERSION="${VERSION#v}"
+            
+            if [ "${{ github.event.action }}" == "new-release" ]; then
+              CHANNEL="stable"
+            else
+              CHANNEL="development"
+            fi
+            
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "channel=$CHANNEL" >> $GITHUB_OUTPUT
+            echo "windows_url=${{ github.event.client_payload.windows_url }}" >> $GITHUB_OUTPUT
+            echo "linux_url=${{ github.event.client_payload.linux_url }}" >> $GITHUB_OUTPUT
+            echo "macos_url=${{ github.event.client_payload.macos_url }}" >> $GITHUB_OUTPUT
+          else
+            VERSION="${{ inputs.version }}"
+            VERSION="${VERSION#v}"
+            echo "version=$VERSION" >> $GITHUB_OUTPUT
+            echo "channel=${{ inputs.channel }}" >> $GITHUB_OUTPUT
+            echo "windows_url=${{ inputs.windows_url }}" >> $GITHUB_OUTPUT
+            echo "linux_url=${{ inputs.linux_url }}" >> $GITHUB_OUTPUT
+            echo "macos_url=${{ inputs.macos_url }}" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "Configured: version=$VERSION, channel=$CHANNEL"
+
+      - name: Add release to targets
+        run: |
+          pdm run add-release \
+            --version "${{ steps.config.outputs.version }}" \
+            --channel "${{ steps.config.outputs.channel }}" \
+            --windows-url "${{ steps.config.outputs.windows_url }}" \
+            --linux-url "${{ steps.config.outputs.linux_url }}" \
+            --macos-url "${{ steps.config.outputs.macos_url }}"
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Create signing event branch
+        id: branch
+        run: |
+          VERSION="${{ steps.config.outputs.version }}"
+          CHANNEL="${{ steps.config.outputs.channel }}"
+          BRANCH="sign/${CHANNEL}-${VERSION}"
+          
+          # Check if branch already exists
+          if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+            echo "Branch $BRANCH already exists, adding timestamp suffix"
+            BRANCH="sign/${CHANNEL}-${VERSION}-$(date +%s)"
+          fi
+          
+          git checkout -b "$BRANCH"
+          git add targets/
+          git commit -m "Add ${CHANNEL} release ${VERSION} targets"
+          git push origin "$BRANCH"
+          
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
+          echo "Created branch: $BRANCH"
+
+      # The signing-event workflow will automatically process pushes to sign/** branches.
+      # After root key ceremony adds this workflow's OIDC identity to targets role,
+      # signing will happen automatically. Until then, manual signing is required.
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: ${{ steps.branch.outputs.branch }}
+          base: main
+          title: 'Add ${{ steps.config.outputs.channel }} release ${{ steps.config.outputs.version }} to TUF repository'
+          body: |
+            This PR adds **${{ steps.config.outputs.channel }}** release **${{ steps.config.outputs.version }}** artifacts to the TUF repository.
+            
+            | Property | Value |
+            |----------|-------|
+            | Version | `${{ steps.config.outputs.version }}` |
+            | Channel | `${{ steps.config.outputs.channel }}` |
+            | Trigger | `${{ github.event_name }}` |
+            
+            **Artifacts added:**
+            - `targets/${{ steps.config.outputs.version }}/synodic-windows-x64.zip`
+            - `targets/${{ steps.config.outputs.version }}/synodic-linux-x64.tar.gz`
+            - `targets/${{ steps.config.outputs.version }}/synodic-macos-x64.tar.gz`
+            - `targets/${{ steps.config.outputs.version }}/metadata.json`
+            - `targets/latest-${{ steps.config.outputs.channel }}.txt`
+            ${{ steps.config.outputs.channel == 'stable' && '- `targets/latest.txt`' || '' }}
+            
+            **Next steps:**
+            The signing-event workflow will process this branch automatically.
+            
+            ---
+            *Automatically created by add-targets workflow*
+          delete-branch: true
+          labels: |
+            release
+            ${{ steps.config.outputs.channel }}

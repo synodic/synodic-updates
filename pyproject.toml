@@ -1,0 +1,38 @@
+[project]
+name = "synodic-updates"
+version = "0.1.0"
+description = "TUF repository for Synodic application updates"
+authors = [{ name = "Asher Norland", email = "asher.norland@gmail.com" }]
+dependencies = ["tuf-on-ci-sign>=0.19.0"]
+requires-python = "==3.14.*"
+readme = "README.md"
+license = { text = "MIT" }
+
+[dependency-groups]
+test = ["pytest>=9.0.2"]
+lint = ["pyrefly>=0.49.0", "ruff>=0.14.13"]
+
+[tool.pdm.scripts]
+# TUF signing operations
+sign = "tuf-on-ci-sign"
+delegate = "tuf-on-ci-delegate"
+
+# Common signing tasks
+sign-targets = { cmd = "tuf-on-ci-delegate add-targets-signer", help = "Add a new targets signer" }
+sign-branch = { shell = "tuf-on-ci-sign $1", help = "Sign a specific branch (e.g., pdm run sign-branch sign/stable-1.0.0)" }
+
+# Repository management
+status = { call = "scripts.status:main", help = "Show TUF repository status" }
+verify = { call = "scripts.verify:main", help = "Verify TUF metadata consistency" }
+add-release = { call = "scripts.add_release:main", help = "Add a release to TUF targets" }
+type-check = "pyrefly check ."
+lint = "ruff check ."
+test = "pytest"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.pyrefly]
+
+[tool.pdm]
+distribution = false
